@@ -24,10 +24,12 @@ namespace ConsoleApp
                     new Shelf(ShelfType.Cold, 10),
                     new Shelf(ShelfType.Frozen, 10),
                     new Shelf(ShelfType.Overflow, 15)
-                }
+                },
+                2000,
+                6000
             );
 
-            Observable.Interval(TimeSpan.FromSeconds(0.5))
+            Observable.Interval(TimeSpan.FromSeconds(0.01))
                 .TakeUntil(x => x.Equals(orders.Count - 1))
                 .Subscribe(
                     x =>

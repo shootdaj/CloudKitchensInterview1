@@ -1,69 +1,27 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 
 namespace ConsoleApp
 {
-    //1. Add locking
-    //2. Explain choices
-    //3. 
-
     internal class OrderProcessor
     {
         public OrderProcessor(
             ILogger logger,
-            List<Shelf> shelves
+            List<Shelf> shelves,
+            int minCourierDelay,
+            int maxCourierDelay
         )
         {
             Logger = logger;
             Shelves = shelves;
-
-            ReceivedOrderBlock = new TransformBlock<Order, Order>(
-                order =>
-                {
-                    Logger.Log($"{order.Id} - Received order");
-                    return order;
-                }
-            );
-
-            ShelveBlock = new TransformBlock<Order, Order>(
-                order =>
-                {
-                    Logger.Log($"{order.Id} - Placing order on shelf");
-                    PlaceOrderOnShelf(order);
-                    return order;
-                }
-            );
-
-            DispatchCourierBlock = new TransformBlock<Order, Order>(
-                order =>
-                {
-                    Logger.Log($"{order.Id} - Dispatching courier");
-                    return order;
-                }
-            );
-
-            FinishOrderBlock = new ActionBlock<Order>(
-                async order =>
-                {
-                    await Task.Delay(2000); //;new Random().Next(2000, 6000));
-                    FinishOrder(order);
-                }
-            );
-
-            ReceivedOrderBlock.LinkTo(DispatchCourierBlock);
-            DispatchCourierBlock.LinkTo(ShelveBlock);
-            ShelveBlock.LinkTo(FinishOrderBlock);
+            MinCourierDelay = minCourierDelay;
+            MaxCourierDelay = maxCourierDelay;
         }
 
-        private TransformBlock<Order, Order> ReceivedOrderBlock { get; }
-
-        private TransformBlock<Order, Order> ShelveBlock { get; }
-
-        private TransformBlock<Order, Order> DispatchCourierBlock { get; }
-
-        private ActionBlock<Order> FinishOrderBlock { get; }
+        private int MinCourierDelay { get; }
+        private int MaxCourierDelay { get; }
 
         public ILogger Logger { get; }
 
@@ -71,10 +29,6 @@ namespace ConsoleApp
 
         private void FinishOrder(Order order)
         {
-            Logger.Log(
-                $"{order.Id} - Finishing order from shelf {order.ShelfType}"
-            );
-
             var orderShelf = GetShelfByType(order.ShelfType);
 
             lock (orderShelf)
@@ -204,16 +158,17 @@ namespace ConsoleApp
                     }
                     else
                     {
-                        Logger.Log(
-                            $"{order.Id} - Adding order to shelf {ShelfType.Overflow} and discarding random order from shelf {ShelfType.Overflow}"
-                        );
-
+                        Order orderToDiscard;
                         lock (overflowShelf)
                         {
-                            var orderToDiscard = overflowShelf.Orders.First();
+                            orderToDiscard = overflowShelf.Orders.First();
                             overflowShelf.Orders.Remove(orderToDiscard);
                             overflowShelf.Orders.Add(order);
                         }
+
+                        Logger.Log(
+                            $"{order.Id} - Adding order to shelf {ShelfType.Overflow} and discarding order {orderToDiscard.Id}"
+                        );
                     }
                 }
             }
@@ -238,18 +193,17 @@ namespace ConsoleApp
             }
         }
 
-        public void PostOrder(Order order)
+        public async Task PostOrder(Order order)
         {
-            ReceivedOrderBlock.Post(order);
+            Logger.Log($"{order.Id} - Received order");
+
+            Logger.Log($"{order.Id} - Placing order on shelf");
+            PlaceOrderOnShelf(order);
+
+            Logger.Log($"{order.Id} - Dispatching courier");
+
+            await Task.Delay(new Random().Next(MinCourierDelay, MaxCourierDelay));
+            FinishOrder(order);
         }
-
-        //public async Task ProcessOrder(Order order)
-        //{
-        //    DispatchCourier(order);
-        //}
-
-        //private async Task DispatchCourier(Order order)
-        //{
-        //}
     }
 }
