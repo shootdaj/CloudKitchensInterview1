@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp
 {
+    /// <summary>
+    ///     Order Processor used to process orders to completion.
+    /// </summary>
     internal class OrderProcessor
     {
         public OrderProcessor(
@@ -38,6 +41,7 @@ namespace ConsoleApp
                     Logger.Log(
                         $"{order.Id} - Delivering order from shelf {orderShelf.ShelfType}"
                     );
+                    OutputShelves();
 
                     var orderToRemove = orderShelf.Orders.Single(x => x.Id.Equals(order.Id));
                     orderShelf.Orders.Remove(orderToRemove);
@@ -54,15 +58,18 @@ namespace ConsoleApp
                     Logger.Log(
                         $"{order.Id} - Delivering order from shelf {overflowShelf.ShelfType}"
                     );
+                    OutputShelves();
 
                     var orderToRemove = overflowShelf.Orders.Single(x => x.Id.Equals(order.Id));
                     overflowShelf.Orders.Remove(orderToRemove);
+                    return;
                 }
             }
 
             Logger.Log(
                 $"{order.Id} - Order was discarded"
             );
+            OutputShelves();
         }
 
         private void PlaceOrderOnShelf(Order order)
@@ -72,6 +79,7 @@ namespace ConsoleApp
             if (!IsShelfFull(shelf.ShelfType))
             {
                 Logger.Log($"{order.Id} - Adding order to shelf {shelf.ShelfType}");
+                OutputShelves();
 
                 lock (shelf)
                 {
@@ -81,11 +89,13 @@ namespace ConsoleApp
             else
             {
                 Logger.Log($"{order.Id} - Shelf {shelf.ShelfType} is full");
+                OutputShelves();
 
                 var overflowShelf = Shelves.Single(s => s.ShelfType.Equals(ShelfType.Overflow));
                 if (!IsShelfFull(ShelfType.Overflow))
                 {
                     Logger.Log($"{order.Id} - Adding order to shelf {ShelfType.Overflow}");
+                    OutputShelves();
 
                     lock (overflowShelf)
                     {
@@ -95,6 +105,7 @@ namespace ConsoleApp
                 else
                 {
                     Logger.Log($"{order.Id} - Shelf {ShelfType.Overflow} is full");
+                    OutputShelves();
 
                     if (overflowShelf.Orders.Any(x => x.ShelfType.Equals(ShelfType.Frozen)) &&
                         !IsShelfFull(ShelfType.Frozen))
@@ -102,6 +113,7 @@ namespace ConsoleApp
                         Logger.Log(
                             $"{order.Id} - Adding order to shelf {ShelfType.Overflow} and moving random order back to shelf {ShelfType.Frozen}"
                         );
+                        OutputShelves();
 
                         var shelfToMoveTo = GetShelfByType(ShelfType.Frozen);
 
@@ -122,6 +134,7 @@ namespace ConsoleApp
                         Logger.Log(
                             $"{order.Id} - Adding order to shelf {ShelfType.Overflow} and moving random order back to shelf {ShelfType.Cold}"
                         );
+                        OutputShelves();
 
                         var shelfToMoveTo = GetShelfByType(ShelfType.Cold);
 
@@ -142,6 +155,7 @@ namespace ConsoleApp
                         Logger.Log(
                             $"{order.Id} - Adding order to shelf {ShelfType.Overflow} and moving random order back to shelf {ShelfType.Hot}"
                         );
+                        OutputShelves();
 
                         var shelfToMoveTo = GetShelfByType(ShelfType.Hot);
 
@@ -169,6 +183,7 @@ namespace ConsoleApp
                         Logger.Log(
                             $"{order.Id} - Adding order to shelf {ShelfType.Overflow} and discarding order {orderToDiscard.Id}"
                         );
+                        OutputShelves();
                     }
                 }
             }
@@ -193,14 +208,41 @@ namespace ConsoleApp
             }
         }
 
+        private void OutputShelves()
+        {
+            //Logger.Log("-------");
+            //Shelves.ForEach(
+            //    s =>
+            //    {
+            //        lock (s)
+            //        {
+            //            Logger.Log($"Shelf {s.ShelfType} contains:");
+            //            s.Orders.ForEach(
+            //                o => { Logger.Log($"{o.Id.ToString()} {o.Name}"); }
+            //            );
+            //        }
+
+            //        Logger.Log("--");
+            //    }
+            //);
+            //Logger.Log("====================");
+        }
+
+        /// <summary>
+        ///     Post a new order to be processed
+        /// </summary>
+        /// <param name="order">Order to be processed</param>
         public async Task PostOrder(Order order)
         {
             Logger.Log($"{order.Id} - Received order");
+            OutputShelves();
 
             Logger.Log($"{order.Id} - Placing order on shelf");
+            OutputShelves();
             PlaceOrderOnShelf(order);
 
             Logger.Log($"{order.Id} - Dispatching courier");
+            OutputShelves();
 
             await Task.Delay(new Random().Next(MinCourierDelay, MaxCourierDelay));
             FinishOrder(order);

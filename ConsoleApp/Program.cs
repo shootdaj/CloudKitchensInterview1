@@ -40,33 +40,8 @@ namespace ConsoleApp
                     }
                 );
 
-
             Console.WriteLine("Begin");
             Console.ReadLine();
         }
     }
 }
-
-
-//var cookBlock = new TransformBlock<DeliveryOrder, Order>(
-//    order =>
-//    {
-//        Thread.Sleep(2000);
-//        Console.WriteLine($"Cooking order: {order.Id}");
-//        return new Order(order.Id);
-//    },
-//    new ExecutionDataflowBlockOptions
-//    {
-//        MaxDegreeOfParallelism = 4
-//    }
-//);
-
-//var shelveBlock = new ActionBlock<Order>(
-//    order =>
-//    {
-//        Console.WriteLine($"Placing order on shelf: {order.Id}");
-//    }
-//);
-
-////var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
-//cookBlock.LinkTo(shelveBlock);
