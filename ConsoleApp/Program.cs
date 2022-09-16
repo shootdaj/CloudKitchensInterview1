@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
+using System.Threading;
 using Newtonsoft.Json;
 
 namespace ConsoleApp
@@ -29,16 +29,27 @@ namespace ConsoleApp
                 6000
             );
 
-            Observable.Interval(TimeSpan.FromSeconds(0.01))
-                .TakeUntil(x => x.Equals(orders.Count - 1))
-                .Subscribe(
-                    x =>
-                    {
-                        var order = orders.Skip((int)x).Take(1).First();
-                        logger.Log($"{order.Id} - Queuing order");
-                        processor.PostOrder(order);
-                    }
-                );
+            for (var i = 0; i < orders.Count; i++)
+            {
+                var order = orders.ElementAt(i); // orders.Skip((int)x).Take(1).First();
+                order.Ordinality = i;
+                logger.Log($"{order.Id} - Queuing order {i}");
+                processor.PostOrder(order);
+                Thread.Sleep(50);
+            }
+
+
+            //Observable.Interval(TimeSpan.FromSeconds(0.05))
+            //    .TakeUntil(x => x.Equals(orders.Count - 1))
+            //    .Subscribe(
+            //        async x =>
+            //        {
+            //            var order = orders.Skip((int)x).Take(1).First();
+            //            order.Ordinality = (int)x;
+            //            logger.Log($"{order.Id} - Queuing order {(int)x}");
+            //            await processor.PostOrder(order);
+            //        }
+            //    );
 
             Console.WriteLine("Begin");
             Console.ReadLine();

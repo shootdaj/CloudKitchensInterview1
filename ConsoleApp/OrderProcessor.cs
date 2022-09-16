@@ -32,6 +32,9 @@ namespace ConsoleApp
 
         private void FinishOrder(Order order)
         {
+            if (order.Ordinality.Equals(131))
+                Logger.Dump();
+
             var orderShelf = GetShelfByType(order.ShelfType);
 
             lock (orderShelf)
@@ -76,6 +79,8 @@ namespace ConsoleApp
         {
             var shelf = Shelves.Single(shelf => shelf.ShelfType.Equals(order.ShelfType));
 
+            //lock (shelf)
+            //{
             if (!IsShelfFull(shelf.ShelfType))
             {
                 Logger.Log($"{order.Id} - Adding order to shelf {shelf.ShelfType}");
@@ -99,7 +104,7 @@ namespace ConsoleApp
 
                     lock (overflowShelf)
                     {
-                        overflowShelf.Orders.Add(order);
+                        if (!IsShelfFull(ShelfType.Overflow)) overflowShelf.Orders.Add(order);
                     }
                 }
                 else
@@ -121,10 +126,15 @@ namespace ConsoleApp
                         {
                             lock (shelfToMoveTo)
                             {
-                                var orderToMove = overflowShelf.Orders.First(x => x.ShelfType.Equals(ShelfType.Frozen));
+                                //if (overflowShelf.Orders.Any(x => x.ShelfType.Equals(ShelfType.Frozen)) &&
+                                //    !IsShelfFull(ShelfType.Frozen))
+                                //{
+                                var orderToMove =
+                                    overflowShelf.Orders.First(x => x.ShelfType.Equals(ShelfType.Frozen));
                                 overflowShelf.Orders.Remove(orderToMove);
                                 shelfToMoveTo.Orders.Add(orderToMove);
                                 overflowShelf.Orders.Add(order);
+                                //}
                             }
                         }
                     }
@@ -142,10 +152,15 @@ namespace ConsoleApp
                         {
                             lock (shelfToMoveTo)
                             {
-                                var orderToMove = overflowShelf.Orders.First(x => x.ShelfType.Equals(ShelfType.Cold));
+                                //if (overflowShelf.Orders.Any(x => x.ShelfType.Equals(ShelfType.Cold)) &&
+                                //    !IsShelfFull(ShelfType.Cold))
+                                //{
+                                var orderToMove =
+                                    overflowShelf.Orders.First(x => x.ShelfType.Equals(ShelfType.Cold));
                                 overflowShelf.Orders.Remove(orderToMove);
                                 shelfToMoveTo.Orders.Add(orderToMove);
                                 overflowShelf.Orders.Add(order);
+                                //}
                             }
                         }
                     }
@@ -163,10 +178,15 @@ namespace ConsoleApp
                         {
                             lock (shelfToMoveTo)
                             {
-                                var orderToMove = overflowShelf.Orders.First(x => x.ShelfType.Equals(ShelfType.Cold));
+                                //if (overflowShelf.Orders.Any(x => x.ShelfType.Equals(ShelfType.Hot)) &&
+                                //    !IsShelfFull(ShelfType.Hot))
+                                //{
+                                var orderToMove =
+                                    overflowShelf.Orders.First(x => x.ShelfType.Equals(ShelfType.Cold));
                                 overflowShelf.Orders.Remove(orderToMove);
                                 shelfToMoveTo.Orders.Add(orderToMove);
                                 overflowShelf.Orders.Add(order);
+                                //}
                             }
                         }
                     }
@@ -187,6 +207,7 @@ namespace ConsoleApp
                     }
                 }
             }
+            //}
         }
 
         private Shelf GetShelfByType(ShelfType shelfType)
@@ -210,22 +231,25 @@ namespace ConsoleApp
 
         private void OutputShelves()
         {
-            //Logger.Log("-------");
-            //Shelves.ForEach(
-            //    s =>
-            //    {
-            //        lock (s)
-            //        {
-            //            Logger.Log($"Shelf {s.ShelfType} contains:");
-            //            s.Orders.ForEach(
-            //                o => { Logger.Log($"{o.Id.ToString()} {o.Name}"); }
-            //            );
-            //        }
+            Logger.Log("-------");
+            Shelves.ForEach(
+                s =>
+                {
+                    Logger.Log($"Shelf {s.ShelfType} contains:");
+                    List<Order> orders;
+                    //lock (s)
+                    //{
+                    orders = s.Orders;
+                    //}
 
-            //        Logger.Log("--");
-            //    }
-            //);
-            //Logger.Log("====================");
+                    orders.ForEach(
+                        o => { Logger.Log($"{o.Id.ToString()} {o.Name}"); }
+                    );
+
+                    Logger.Log("--");
+                }
+            );
+            Logger.Log("====================");
         }
 
         /// <summary>

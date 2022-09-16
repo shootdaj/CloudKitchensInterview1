@@ -11,6 +11,8 @@ namespace ConsoleApp
             Id = id;
         }
 
+        public int Ordinality { get; set; }
+
         public Guid Id { get; }
         public string Name { get; set; }
 
